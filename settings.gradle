@@ -1,0 +1,2 @@
+rootProject.name = 'scm'
+include('app')

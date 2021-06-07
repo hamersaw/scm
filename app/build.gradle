@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    jcenter()
+
+}
+
+dependencies {
+    implementation 'info.picocli:picocli:4.6.1'
+
+    testImplementation 'junit:junit:4.13'
+}
+
+task copyDependencies(type: Copy) {
+    from configurations.runtimeClasspath
+    into file("$buildDir/libs")
+}
+
+build.dependsOn copyDependencies
