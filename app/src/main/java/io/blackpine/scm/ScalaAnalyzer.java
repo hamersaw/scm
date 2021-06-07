@@ -2,9 +2,9 @@ package io.blackpine.scm;
 
 import java.io.File;
 
-public class JavaAnalyzer extends Analyzer {
+public class ScalaAnalyzer extends Analyzer {
     public static final String[] parsableExtensions =
-        new String[]{"java"};
+        new String[]{"scala"};
 
     @Override
     public String[] getParsableExtensions() {
@@ -13,6 +13,6 @@ public class JavaAnalyzer extends Analyzer {
 
     @Override
     public void parse(File file) throws Exception {
-        System.err.println("JavaAnalyzer.parse(...) unimplemented");
+        System.err.println("ScalaAnalyzer.parse(...) unimplemented");
     }
 }
