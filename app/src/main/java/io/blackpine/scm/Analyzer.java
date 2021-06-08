@@ -2,6 +2,7 @@ package io.blackpine.scm;
 
 import java.io.FileReader;
 import java.io.Reader;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class Analyzer {
@@ -12,6 +13,7 @@ public abstract class Analyzer {
     }
 
     public abstract String[] getParsableExtensions();
+    public abstract String getLanguage();
 
     public void process(String filename) throws Exception {
         // open FileReader and process
@@ -30,5 +32,5 @@ public abstract class Analyzer {
         return this.fileCount.get() != 0;
     }
 
-    public abstract String toJson();
+    public abstract Map<String, String> getAttributes();
 }

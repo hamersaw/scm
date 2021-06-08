@@ -9,6 +9,7 @@ import org.reflections.Reflections;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -27,6 +28,10 @@ public class Main implements Callable<Integer> {
     @Parameters(index="0..*", description="root file(s) to evaluate")
     private File[] roots;
 
+    private List<Class<? extends Analyzer>> analyzerClasses =
+        new ArrayList(Arrays.asList(
+            JavaAnalyzer.class, ScalaAnalyzer.class));
+
     public static void main(String[] args) {
         int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -34,12 +39,6 @@ public class Main implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        // find all classes (in this package) extending Analyzer
-        Reflections reflections = 
-            new Reflections(Main.class.getPackage().getName());
-        Set<Class<? extends Analyzer>> analyzerClasses =
-            reflections.getSubTypesOf(Analyzer.class);
-
         // initialize analyzer instances
         List<Analyzer> analyzers = new ArrayList();
         HashMap<String, Analyzer> extensions = new HashMap();
@@ -98,9 +97,11 @@ public class Main implements Callable<Integer> {
         }
 
         // TODO - print analyzer results
+        Printer printer = new TabbedPrinter();
         for (Analyzer analyzer : analyzers) {
             if (analyzer.updated()) {
-                System.out.println(analyzer.toJson());
+                printer.process(analyzer.getLanguage(),
+                    analyzer.getAttributes());
             }
         }
 

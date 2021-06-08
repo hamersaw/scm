@@ -6,7 +6,10 @@ Simple cli to output static code metrics supporting multiple languages.
     gradle :app:build
 
 ## Usage
-    java -cp "app/build/libs/*" io.blackpine.scm.Main
+    java --illegal-access=deny -cp "app/build/libs/*" io.blackpine.scm.Main
 
 ## TODO
-- everything
+- allow third party analyzer classes (include jar and pass extension:class and parameters)
+- implement JavascriptAnalyzer
+- implement PythonAnalyzer
+- implement ScalaAnalyzer

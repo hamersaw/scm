@@ -15,6 +15,8 @@ import net.sourceforge.pmd.lang.java.ast.ASTMethodDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTPackageDeclaration;
 
 import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class JavaAnalyzer extends Analyzer {
     public static final String[] parsableExtensions =
         new String[]{"java"};
+    public static final String language = "java";
 
     protected AtomicInteger classCount, methodCount;
     protected Set<String> packages;
@@ -35,6 +38,11 @@ public class JavaAnalyzer extends Analyzer {
     @Override
     public String[] getParsableExtensions() {
         return parsableExtensions;
+    }
+
+    @Override
+    public String getLanguage() {
+        return language;
     }
 
     @Override
@@ -88,11 +96,18 @@ public class JavaAnalyzer extends Analyzer {
         }
     }
 
-    public String toJson() {
-        return "{\"classCount\":" + this.classCount.get()
-            + ",\"fileCount\":" + this.fileCount.get()
-            + ",\"methodCount\":" + this.methodCount.get()
-            + ",\"language\":\"java\""
-            + ",\"packageCount\":" + this.packages.size() + "}";
+    @Override
+    public Map<String, String> getAttributes() {
+        HashMap<String, String> attributes = new HashMap();
+        attributes.put("fileCount",
+            Integer.toString(this.fileCount.get()));
+        attributes.put("classCount",
+            Integer.toString(this.classCount.get()));
+        attributes.put("methodCount",
+            Integer.toString(this.methodCount.get()));
+        attributes.put("packageCount",
+            Integer.toString(this.packages.size()));
+
+        return attributes;
     }
 }
