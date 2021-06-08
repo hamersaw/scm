@@ -11,6 +11,8 @@ dependencies {
     implementation 'info.picocli:picocli:4.6.1'
     implementation 'org.reflections:reflections:0.9.12'
 
+    implementation fileTree(dir: '../libs', include: '*.jar')
+
     testImplementation 'junit:junit:4.13'
 }
 

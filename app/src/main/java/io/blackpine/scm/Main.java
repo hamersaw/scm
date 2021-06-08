@@ -8,16 +8,21 @@ import picocli.CommandLine.Parameters;
 import org.reflections.Reflections;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Command(name="scm", mixinStandardHelpOptions=true,
     description="displays code metrics for specified directory(ies) or file(s)")
 public class Main implements Callable<Integer> {
     @Option(names={"-t", "--thread-count"},
         description="thread count [default: 4]")
-    private short theadCount = 4;
+    private short threadCount = 4;
 
     @Parameters(index="0..*", description="root file(s) to evaluate")
     private File[] roots;
@@ -36,16 +41,35 @@ public class Main implements Callable<Integer> {
             reflections.getSubTypesOf(Analyzer.class);
 
         // initialize analyzer instances
-        HashMap<String, Analyzer> analyzers = new HashMap();
+        List<Analyzer> analyzers = new ArrayList();
+        HashMap<String, Analyzer> extensions = new HashMap();
         for (Class<? extends Analyzer> analyzerClass : analyzerClasses) {
             Analyzer analyzer = analyzerClass.newInstance();
+            analyzers.add(analyzer);
+
             for (String extension : analyzer.getParsableExtensions()) {
-                // TODO - check if extension already exists
-                analyzers.put(extension, analyzer);
+                // check if extension already exists
+                if (extensions.containsKey(extension)) {
+                    System.err.println("can not register extension '" +
+                        extension + "' more than once");
+                    return 1;
+                }
+
+                extensions.put(extension, analyzer);
             }
         }
 
-        // TODO - intialize worker threads
+        // intialize worker threads
+        BlockingQueue<String> queue = new LinkedBlockingQueue();
+        List<FutureTask> futureTasks = new ArrayList();
+        for (int i=0; i<this.threadCount; i++) {
+            FutureTask<Integer> futureTask =
+                new FutureTask(new Worker(extensions, queue));
+            futureTasks.add(futureTask);
+
+            Thread thread = new Thread(futureTask);
+            thread.start();
+        }
 
         // iterate over roots
         for (File root : this.roots) {
@@ -57,40 +81,87 @@ public class Main implements Callable<Integer> {
             }
 
             // recurse through directory checking for parsable files
-            this.findParsableFiles(root, analyzers.keySet());
+            this.findFiles(root, queue);
         }
 
-        // TODO - wait for worker threads to complete
+        // send poison pills down queue
+        for (int i=0; i<this.threadCount; i++) {
+            queue.put("");
+        }
+
+        // wait for worker threads to complete
+        for (FutureTask<Integer> futureTask : futureTasks) {
+            int exitCode = futureTask.get();
+            if (exitCode != 0) {
+                return exitCode;
+            }
+        }
+
+        // TODO - print analyzer results
+        for (Analyzer analyzer : analyzers) {
+            if (analyzer.updated()) {
+                System.out.println(analyzer.toJson());
+            }
+        }
 
         return 0;
     }
 
-    public void findParsableFiles(File root,
-            Set<String> parsableExtensions) {
+    public void findFiles(File root, BlockingQueue<String> queue)
+            throws Exception {
         if (root.isDirectory()) {
             // if directory -> iterate over children
             for (File child : root.listFiles()) {
-                this.findParsableFiles(child, parsableExtensions);
+                this.findFiles(child, queue);
             }
         } else if (root.isHidden()) {
             // TODO - skip hidden files?
         } else {
-            // identify file extension
-            String filename = root.getAbsolutePath();
-            int lastDotIndex = filename.lastIndexOf('.');
-            int lastSeparatorIndex =
-                filename.lastIndexOf(File.separatorChar);
+            queue.put(root.getAbsolutePath());
+        }
+    }
 
-            if (lastDotIndex <= lastSeparatorIndex) {
-                return;
+    class Worker implements Callable<Integer> {
+        HashMap<String, Analyzer> extensions;
+        BlockingQueue<String> queue;
+
+        public Worker(HashMap<String, Analyzer> extensions,
+                BlockingQueue<String> queue) {
+            this.extensions = extensions;
+            this.queue = queue;
+        }
+
+        @Override
+        public Integer call() throws Exception {
+            String filename = null;
+            while (true) {
+                // take next file - break loop if poison pill (ie. "")
+                filename = queue.take();
+                if (filename.isEmpty()) {
+                    break;
+                }
+
+                // identify file extension
+                int lastDotIndex = filename.lastIndexOf('.');
+                int lastSeparatorIndex =
+                    filename.lastIndexOf(File.separatorChar);
+
+                if (lastDotIndex <= lastSeparatorIndex) {
+                    continue;
+                }
+
+                // check if extension is parasable
+                String extension = filename.substring(lastDotIndex + 1);
+                if (!extensions.containsKey(extension)) {
+                    continue;
+                }
+
+                // parse file
+                Analyzer analyzer = extensions.get(extension);
+                analyzer.process(filename);
             }
 
-            // check if extension is parasable
-            String extension = filename.substring(lastDotIndex + 1);
-            if (parsableExtensions.contains(extension)) {
-                // TODO - add file to parse queue
-                System.out.println("TODO - parse '" + filename + "'");
-            }
+            return 0;
         }
     }
 }
