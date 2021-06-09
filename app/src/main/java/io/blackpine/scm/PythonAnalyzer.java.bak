@@ -1,0 +1,58 @@
+package io.blackpine.scm;
+
+import net.sourceforge.pmd.PMD;
+import net.sourceforge.pmd.PMDConfiguration;
+import net.sourceforge.pmd.lang.LanguageVersion;
+import net.sourceforge.pmd.lang.Parser;
+import net.sourceforge.pmd.lang.ast.Node;
+import net.sourceforge.pmd.lang.python.PythonHandler;
+import net.sourceforge.pmd.lang.python.PythonLanguageModule;
+
+import java.io.Reader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class PythonAnalyzer extends Analyzer {
+    public static final String[] parsableExtensions =
+        new String[]{"py"};
+    public static final String language = "python";
+
+    public PythonAnalyzer() {
+    }
+
+    @Override
+    public String[] getParsableExtensions() {
+        return parsableExtensions;
+    }
+
+    @Override
+    public String getLanguage() {
+        return language;
+    }
+
+    @Override
+    public void processReader(String filename,
+            Reader reader) throws Exception {
+        // initailize language parser
+        LanguageVersion languageVersion = new LanguageVersion(
+            new PythonLanguageModule(), "", new PythonHandler());
+
+        PMDConfiguration configuration = new PMDConfiguration();
+        Parser parser = PMD.parserFor(languageVersion, configuration);
+
+        // parse nodes
+        Node node = parser.parse(filename, reader);
+        //parseNode(node);
+        this.printNode(node, 0);
+    }
+
+    @Override
+    public Map<String, String> getAttributes() {
+        HashMap<String, String> attributes = new HashMap();
+        attributes.put("fileCount",
+            Integer.toString(this.fileCount.get()));
+
+        return attributes;
+    }
+}

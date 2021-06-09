@@ -1,5 +1,15 @@
 package io.blackpine.scm;
 
+import net.sourceforge.pmd.PMD;
+import net.sourceforge.pmd.PMDConfiguration;
+import net.sourceforge.pmd.lang.LanguageVersion;
+import net.sourceforge.pmd.lang.Parser;
+import net.sourceforge.pmd.lang.ast.Node;
+import net.sourceforge.pmd.lang.scala.ScalaLanguageModule;
+import net.sourceforge.pmd.lang.scala.ast.ASTDefnDef;
+import net.sourceforge.pmd.lang.scala.ast.ASTDefnObject;
+import net.sourceforge.pmd.lang.scala.ast.ASTPkg;
+
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +44,38 @@ public class ScalaAnalyzer extends Analyzer {
     @Override
     public void processReader(String filename,
             Reader reader) throws Exception {
-        System.err.println("ScalaAnalyzer.parse(...) unimplemented");
+        // initailize language parser
+        LanguageVersion languageVersion =
+            new ScalaLanguageModule().getVersion("2.13");
+
+        PMDConfiguration configuration = new PMDConfiguration();
+        Parser parser = PMD.parserFor(languageVersion, configuration);
+
+        // parse nodes
+        Node node = parser.parse(filename, reader);
+        parseNode(node);
+    }
+
+    protected void parseNode(Node node) {
+        if (node instanceof ASTPkg) {
+            // if package is not already registered -> register
+            ASTPkg defnNode = (ASTPkg) node;
+
+            String packageName = defnNode.getNode().ref().toString();
+            if (!this.packages.contains(packageName)) {
+                this.packages.add(packageName);
+            }
+        } else if (node instanceof ASTDefnObject) {
+            // increment class count
+            this.classCount.incrementAndGet();
+        } else if (node instanceof ASTDefnDef) {
+            // increment method count
+            this.methodCount.incrementAndGet();
+        }
+
+        for (int i=0; i<node.jjtGetNumChildren(); i++) {
+            parseNode(node.jjtGetChild(i));
+        }
     }
 
     @Override

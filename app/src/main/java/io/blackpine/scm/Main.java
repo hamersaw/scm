@@ -29,8 +29,8 @@ public class Main implements Callable<Integer> {
     private File[] roots;
 
     private List<Class<? extends Analyzer>> analyzerClasses =
-        new ArrayList(Arrays.asList(
-            JavaAnalyzer.class, ScalaAnalyzer.class));
+        new ArrayList(Arrays.asList(JavaAnalyzer.class,
+            JavascriptAnalyzer.class, ScalaAnalyzer.class));
 
     public static void main(String[] args) {
         int exitCode = new CommandLine(new Main()).execute(args);

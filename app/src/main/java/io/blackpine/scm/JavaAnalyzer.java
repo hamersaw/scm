@@ -2,14 +2,10 @@ package io.blackpine.scm;
 
 import net.sourceforge.pmd.PMD;
 import net.sourceforge.pmd.PMDConfiguration;
-import net.sourceforge.pmd.RuleContext;
 import net.sourceforge.pmd.lang.LanguageVersion;
-import net.sourceforge.pmd.lang.LanguageVersionHandler;
 import net.sourceforge.pmd.lang.Parser;
 import net.sourceforge.pmd.lang.ast.Node;
-
 import net.sourceforge.pmd.lang.java.JavaLanguageModule;
-import net.sourceforge.pmd.lang.java.JavaLanguageHandler;
 import net.sourceforge.pmd.lang.java.ast.ASTClassOrInterfaceDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTMethodDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTPackageDeclaration;
@@ -49,32 +45,18 @@ public class JavaAnalyzer extends Analyzer {
     public void processReader(String filename,
             Reader reader) throws Exception {
         // initailize language parser
-        LanguageVersion languageVersion = new LanguageVersion(
-            new JavaLanguageModule(), "", new JavaLanguageHandler(11));
+        LanguageVersion languageVersion =
+            new JavaLanguageModule().getVersion("11");
 
         PMDConfiguration configuration = new PMDConfiguration();
         Parser parser = PMD.parserFor(languageVersion, configuration);
 
         // parse nodes
-        //printChildren(node, 0);
         Node node = parser.parse(filename, reader);
         parseNode(node);
     }
 
-    /*private void printChildren(Node root, int index) {
-        String line = "";
-        for (int i=0; i<index; i++) {
-            line += "  ";
-        }
-
-        System.out.println(line + root);
-
-        for (int i=0; i<root.jjtGetNumChildren(); i++) {
-            printChildren(root.jjtGetChild(i), index+1);
-        }
-    }*/
-
-    private void parseNode(Node node) {
+    protected void parseNode(Node node) {
         if (node instanceof ASTPackageDeclaration) {
             // if package is not already registered -> register
             ASTPackageDeclaration declarationNode = 

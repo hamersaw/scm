@@ -1,5 +1,7 @@
 package io.blackpine.scm;
 
+import net.sourceforge.pmd.lang.ast.Node;
+
 import java.io.FileReader;
 import java.io.Reader;
 import java.util.Map;
@@ -33,4 +35,17 @@ public abstract class Analyzer {
     }
 
     public abstract Map<String, String> getAttributes();
+
+    protected void printNode(Node node, int index) {
+        String line = "";
+        for (int i=0; i<index; i++) {
+            line += "  ";
+        }
+
+        System.out.println(line + node);
+
+        for (int i=0; i<node.jjtGetNumChildren(); i++) {
+            this.printNode(node.jjtGetChild(i), index+1);
+        }
+    }
 }
